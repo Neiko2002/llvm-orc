@@ -39,49 +39,49 @@ public class LLVMFacModuleBuilder {
 	public LLVMFacModuleBuilder() {
 		llvmInt32Type = LLVMInt32Type();
 	}
-	
+
 	public String getFunctionName() {
 		return functionName;
 	}
 
 	public LLVMModuleRef build() {
-		
+
 		LLVMModuleRef module = LLVMModuleCreateWithName("fac_module");
 
 		LLVMTypeRef[] args = { llvmInt32Type };
 		LLVMTypeRef funcType = LLVMFunctionType(llvmInt32Type, new PointerPointer<>(args), 1, 0);
-    	LLVMValueRef fac = LLVMAddFunction(module, functionName, funcType);
-        LLVMSetFunctionCallConv(fac, LLVMCCallConv);
-        
-        LLVMValueRef n = LLVMGetParam(fac, 0);
+		LLVMValueRef fac = LLVMAddFunction(module, functionName, funcType);
+		LLVMSetFunctionCallConv(fac, LLVMCCallConv);
 
-        LLVMBasicBlockRef entry = LLVMAppendBasicBlock(fac, "entry");
-        LLVMBasicBlockRef iftrue = LLVMAppendBasicBlock(fac, "iftrue");
-        LLVMBasicBlockRef iffalse = LLVMAppendBasicBlock(fac, "iffalse");
-        LLVMBasicBlockRef end = LLVMAppendBasicBlock(fac, "end");
-        LLVMBuilderRef builder = LLVMCreateBuilder();
+		LLVMValueRef n = LLVMGetParam(fac, 0);
 
-        LLVMPositionBuilderAtEnd(builder, entry);
-        LLVMValueRef If = LLVMBuildICmp(builder, LLVMIntEQ, n, LLVMConstInt(llvmInt32Type, 0, 0), "n == 0");
-        LLVMBuildCondBr(builder, If, iftrue, iffalse);
+		LLVMBasicBlockRef entry = LLVMAppendBasicBlock(fac, "entry");
+		LLVMBasicBlockRef iftrue = LLVMAppendBasicBlock(fac, "iftrue");
+		LLVMBasicBlockRef iffalse = LLVMAppendBasicBlock(fac, "iffalse");
+		LLVMBasicBlockRef end = LLVMAppendBasicBlock(fac, "end");
+		LLVMBuilderRef builder = LLVMCreateBuilder();
 
-        LLVMPositionBuilderAtEnd(builder, iftrue);
-        LLVMValueRef res_iftrue = LLVMConstInt(llvmInt32Type, 1, 0);
-        LLVMBuildBr(builder, end);
+		LLVMPositionBuilderAtEnd(builder, entry);
+		LLVMValueRef If = LLVMBuildICmp(builder, LLVMIntEQ, n, LLVMConstInt(llvmInt32Type, 0, 0), "n == 0");
+		LLVMBuildCondBr(builder, If, iftrue, iffalse);
 
-        LLVMPositionBuilderAtEnd(builder, iffalse);
-        LLVMValueRef n_minus = LLVMBuildSub(builder, n, LLVMConstInt(llvmInt32Type, 1, 0), "n - 1");
-        LLVMValueRef call_fac = LLVMBuildCall(builder, fac, n_minus, 1, new BytePointer("fac(n - 1)"));
-        LLVMValueRef res_iffalse = LLVMBuildMul(builder, n, call_fac, "n * fac(n - 1)");
-        LLVMBuildBr(builder, end);
+		LLVMPositionBuilderAtEnd(builder, iftrue);
+		LLVMValueRef res_iftrue = LLVMConstInt(llvmInt32Type, 1, 0);
+		LLVMBuildBr(builder, end);
 
-        LLVMPositionBuilderAtEnd(builder, end);
-        LLVMValueRef res = LLVMBuildPhi(builder, llvmInt32Type, "result");
-        LLVMValueRef[] phi_vals = { res_iftrue, res_iffalse };
-        LLVMBasicBlockRef[] phi_blocks = { iftrue, iffalse };
-        LLVMAddIncoming(res, new PointerPointer<>(phi_vals), new PointerPointer<>(phi_blocks), 2);
-        
-        LLVMBuildRet(builder, res);
+		LLVMPositionBuilderAtEnd(builder, iffalse);
+		LLVMValueRef n_minus = LLVMBuildSub(builder, n, LLVMConstInt(llvmInt32Type, 1, 0), "n - 1");
+		LLVMValueRef call_fac = LLVMBuildCall(builder, fac, n_minus, 1, new BytePointer("fac(n - 1)"));
+		LLVMValueRef res_iffalse = LLVMBuildMul(builder, n, call_fac, "n * fac(n - 1)");
+		LLVMBuildBr(builder, end);
+
+		LLVMPositionBuilderAtEnd(builder, end);
+		LLVMValueRef res = LLVMBuildPhi(builder, llvmInt32Type, "result");
+		LLVMValueRef[] phi_vals = { res_iftrue, res_iffalse };
+		LLVMBasicBlockRef[] phi_blocks = { iftrue, iffalse };
+		LLVMAddIncoming(res, new PointerPointer<>(phi_vals), new PointerPointer<>(phi_blocks), 2);
+
+		LLVMBuildRet(builder, res);
 
 		LLVMDisposeBuilder(builder);
 

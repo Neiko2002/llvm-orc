@@ -26,19 +26,19 @@ import org.bytedeco.llvm.global.LLVM;
  * @author Nico Hezel
  *
  */
-public class LLVMOrcEagerCompiler {
+public class LLVMOrcEagerlyCompiler {
 
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) throws InterruptedException {
+
 		LLVMFacModuleBuilder moduleBuilder = new LLVMFacModuleBuilder();
-		
+
 		// build and verify the module
 		LLVMModuleRef module = moduleBuilder.build();
 		verify(module);
-		
+
 		// Initialize the compiler
 		initialize();
-		
+
 		// Should we bail out for windows platforms. Since it might not be supported?
 		// https://github.com/llvm-mirror/llvm/blob/master/unittests/ExecutionEngine/Orc/OrcTestCommon.h#L139
 		final BytePointer def_triple = LLVM.LLVMGetDefaultTargetTriple();
@@ -59,7 +59,7 @@ public class LLVMOrcEagerCompiler {
 			LLVMDisposeMessage(def_triple);
 			return;
 		}
-		
+
 		System.out.println("Target information triplet: " + def_triple.getString());
 		System.out.println("Target machine name: " + LLVM.LLVMGetTargetName(target_ref).getString());
 		System.out.println("Target machine description: " + LLVM.LLVMGetTargetDescription(target_ref).getString());
@@ -76,30 +76,31 @@ public class LLVMOrcEagerCompiler {
 		LLVMDisposeMessage(def_triple);
 		LLVMOrcJITStackRef orc_ref = LLVM.LLVMOrcCreateInstance(tm_ref);
 
-		
+
 		// Mangle the given symbol.
 		// Memory is allocated for the mangled symbol, which will be owned by the client.
 		BytePointer testFuncName = new BytePointer();
 		LLVM.LLVMOrcGetMangledSymbol(orc_ref, testFuncName, moduleBuilder.getFunctionName());
 		System.out.println("Mangled symbol name: "+testFuncName.getString());
-		
+
 		// Find the and return the symbol/function address of the provided name.
 		// The lookupCtx is the same object as the last parameter in the LLVMOrcAddEagerlyCompiledIR we call next.
 		LLVMOrcSymbolResolverFn symbol_resolver_callback = new LLVMOrcSymbolResolverFn() {
-            @Override 
-            public long call(BytePointer name, Pointer lookupCtx) {
-            	System.out.println("LLVMOrcSymbolResolverFn: "+name.getString());
-            	return 0L; // dummy address
-            }
-        };
-        
-        // We send a reference of out OrcJITStack to the callback function  
-        // TODO: the eagerly compiler currently does not work
-        long[] retHandle = new long[1];
+			@Override 
+			public long call(BytePointer name, Pointer lookupCtx) {
+				System.out.println("LLVMOrcSymbolResolverFn: "+name.getString());
+				return 0L; // dummy address
+			}
+		};
+
+		// We send a reference of out OrcJITStack to the callback function  
+		// TODO: the eagerly compiler currently does not work
+		long[] retHandle = new long[1];
 		LLVMErrorRef errorCode = LLVM.LLVMOrcAddEagerlyCompiledIR(orc_ref, retHandle, module, symbol_resolver_callback, orc_ref);
+		Thread.sleep(10000);
 		checkOrcError(orc_ref, errorCode);
 		System.out.println("retHandle value: " + retHandle[0]);
-		
+
 		// get symbol address searching the entire stack
 		long[] fnAddr = new long[1];
 		errorCode = LLVM.LLVMOrcGetSymbolAddress(orc_ref, fnAddr, moduleBuilder.getFunctionName());
@@ -115,12 +116,12 @@ public class LLVMOrcEagerCompiler {
 		com.sun.jna.Function func = com.sun.jna.Function.getFunction(new com.sun.jna.Pointer(fnAddr[0]));
 		Object result = func.invoke(int.class, new Object[] {10});
 		System.out.println(result);
-		
+
 		// cleanup
 		LLVM.LLVMOrcRemoveModule(orc_ref, retHandle[0]);
 		LLVM.LLVMOrcDisposeMangledSymbol(testFuncName);
 		LLVM.LLVMOrcDisposeInstance(orc_ref);
-		
+
 		System.out.println("finished");
 	}
 

@@ -34,10 +34,10 @@ import org.bytedeco.llvm.global.LLVM;
 public class LLVMOrcDirectCallCompiler {
 
 	public static void main(String[] args) throws URISyntaxException, FileNotFoundException, ParseException {
-		
+
 		// Initialize the compiler
 		initialize();
-		
+
 		// Should we bail out for windows platforms. Since it might not be supported?
 		// https://github.com/llvm-mirror/llvm/blob/master/unittests/ExecutionEngine/Orc/OrcTestCommon.h#L139
 		final BytePointer def_triple = LLVM.LLVMGetDefaultTargetTriple();
@@ -58,7 +58,7 @@ public class LLVMOrcDirectCallCompiler {
 			LLVMDisposeMessage(def_triple);
 			return;
 		}
-		
+
 		System.out.println("Target information triplet: " + def_triple.getString());
 		System.out.println("Target machine name: " + LLVM.LLVMGetTargetName(target_ref).getString());
 		System.out.println("Target machine description: " + LLVM.LLVMGetTargetDescription(target_ref).getString());
@@ -74,58 +74,58 @@ public class LLVMOrcDirectCallCompiler {
 				LLVM.LLVMCodeModelJITDefault);
 		LLVMDisposeMessage(def_triple);
 		LLVMOrcJITStackRef orc_ref = LLVM.LLVMOrcCreateInstance(tm_ref);
-        
+
 		// Mangle the given symbol.
 		// Memory is allocated for the mangled symbol, which will be owned by the client.
-        LLVMFacModuleBuilder moduleBuilder = new LLVMFacModuleBuilder();
+		LLVMFacModuleBuilder moduleBuilder = new LLVMFacModuleBuilder();
 		BytePointer funcName = new BytePointer();
 		LLVM.LLVMOrcGetMangledSymbol(orc_ref, funcName, moduleBuilder.getFunctionName());
 		System.out.println("Mangled symbol name: "+funcName.getString());
-		
+
 		// Find the and return the symbol/function address of the provided name.
 		// The lookupCtx is the same object as the last parameter in the LLVMOrcAddEagerlyCompiledIR we call next.
 		LLVMOrcSymbolResolverFn symbol_resolver_callback = new LLVMOrcSymbolResolverFn() {
-            @Override 
-            public long call(BytePointer name, Pointer lookupCtx) {
-            	System.out.println("LLVMOrcSymbolResolverFn: "+name.getString());
-            	return 0L; // dummy address
-            }
-        };
-        
-        LLVMOrcLazyCompileCallbackFn lazyCompileCallback = new LLVMOrcLazyCompileCallbackFn() {
+			@Override 
+			public long call(BytePointer name, Pointer lookupCtx) {
+				System.out.println("LLVMOrcSymbolResolverFn: "+name.getString());
+				return 0L; // dummy address
+			}
+		};
+
+		LLVMOrcLazyCompileCallbackFn lazyCompileCallback = new LLVMOrcLazyCompileCallbackFn() {
 			public long call(LLVMOrcJITStackRef JITStack, Pointer CallbackCtx) {
 				System.out.println("LLVMOrcLazyCompileCallbackFn");
-				
+
 				// build and verify the module
 				LLVMModuleRef module = moduleBuilder.build();
 				verify(module);
-				
+
 				// TODO eagerly compile does not work
 				long[] retHandle = new long[1];
-//				LLVMErrorRef errorCode = LLVM.LLVMOrcAddEagerlyCompiledIR(JITStack, retHandle, module, symbol_resolver_callback, CallbackCtx);
+				//				LLVMErrorRef errorCode = LLVM.LLVMOrcAddEagerlyCompiledIR(JITStack, retHandle, module, symbol_resolver_callback, CallbackCtx);
 				LLVMErrorRef errorCode = LLVM.LLVMOrcAddLazilyCompiledIR(JITStack, retHandle, module, symbol_resolver_callback, CallbackCtx);
 				checkOrcError(orc_ref, errorCode);
-				
-			    long[] fnAddr = new long[1];
-			    errorCode = LLVM.LLVMOrcGetSymbolAddressIn(JITStack, fnAddr, retHandle[0], funcName);
+
+				long[] fnAddr = new long[1];
+				errorCode = LLVM.LLVMOrcGetSymbolAddressIn(JITStack, fnAddr, retHandle[0], funcName);
 				checkOrcError(orc_ref, errorCode);
 				System.out.println(funcName.getString()+" function address: "+fnAddr[0]);
-				
+
 				errorCode = LLVM.LLVMOrcSetIndirectStubPointer(JITStack, funcName + "_stub", fnAddr[0]);
 				checkOrcError(orc_ref, errorCode);
-				
+
 				return fnAddr[0];
 			}
 		};
-		
+
 		long[] retHandle = new long[1];
 		LLVMErrorRef errorCode = LLVM.LLVMOrcCreateLazyCompileCallback(orc_ref, retHandle, lazyCompileCallback, orc_ref);
 		checkOrcError(orc_ref, errorCode);
 		System.out.println("retHandle value: " + retHandle[0]);
-		
+
 		errorCode = LLVM.LLVMOrcCreateIndirectStub(orc_ref, funcName + "_stub", retHandle[0]);
 		checkOrcError(orc_ref, errorCode);
-		
+
 		// get symbol address searching the entire stack
 		long[] fnAddr = new long[1];
 		errorCode = LLVM.LLVMOrcGetSymbolAddress(orc_ref, fnAddr, funcName + "_stub");
@@ -136,7 +136,7 @@ public class LLVMOrcDirectCallCompiler {
 		com.sun.jna.Function func = com.sun.jna.Function.getFunction(new com.sun.jna.Pointer(fnAddr[0]));
 		Object result = func.invoke(int.class, new Object[] {10});
 		System.out.println("result: "+result);
-		
+
 		System.out.println("finished");
 	}
 
@@ -154,7 +154,7 @@ public class LLVMOrcDirectCallCompiler {
 		// The main program should call this function to initialize the native target corresponding to the host.
 		LLVMInitializeNativeTarget();
 	}
-	
+
 	protected static void checkOrcError(LLVMOrcJITStackRef orc_ref, LLVMErrorRef errorCode) {
 		if(errorCode != null) {
 
