@@ -1,0 +1,36 @@
+# ignore gradle files
+/.gradle/
+gradle.properties
+
+# generated files
+/bin/
+/logs/
+/gen/
+/build/
+/buildSrc/build/
+/buildSrc/.gradle/
+
+# Windows thumbnail db
+Thumbs.db
+
+# OSX files
+.DS_Store
+
+# Eclipse project files
+/.metadata/
+/.settings/
+.classpath
+.project
+
+# IntelliJ IDEA files
+.idea
+*.iml
+*.iws
+*.ipr
+
+# JMH and bytecode generated classes
+/generated/
+.factorypath
+
+# Git pages
+/gh-pages/

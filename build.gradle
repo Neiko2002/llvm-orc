@@ -1,0 +1,40 @@
+plugins {
+	id 'java'
+	id 'eclipse'
+	id 'idea'
+	id 'me.champeau.gradle.jmh' version '0.5.0'
+}
+
+// Java compatibility
+sourceCompatibility = targetCompatibility = 1.14
+
+// character encoding
+tasks.withType(AbstractCompile)*.options*.encoding = "UTF-8"
+
+jmh {
+	jmhVersion = '1.23' 
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+dependencies {
+	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.5.0'
+	implementation group: 'org.bytedeco', name: 'llvm-platform', version: '10.0.0-1.5.4-SNAPSHOT'
+
+	// if you need a specific snapshot version
+	// https://oss.sonatype.org/content/repositories/snapshots/org/bytedeco/llvm/10.0.0-1.5.4-SNAPSHOT/
+	//implementation group: 'org.bytedeco', name: 'llvm', version: '10.0.0-1.5.4-20200802.084905-331', changing: true
+}
+
+wrapper {
+    gradleVersion = "6.5.1";
+	distributionUrl = distributionUrl.replace("bin", "all");
+}
