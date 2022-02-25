@@ -27,7 +27,7 @@ configurations.all {
 
 dependencies {
 	implementation group: 'net.java.dev.jna', name: 'jna', version: '5.5.0'
-	implementation group: 'org.bytedeco', name: 'llvm-platform', version: '10.0.0-1.5.4-SNAPSHOT'
+	implementation group: 'org.bytedeco', name: 'llvm-platform', version: '10.0.1-1.5.4'
 
 	// if you need a specific snapshot version
 	// https://oss.sonatype.org/content/repositories/snapshots/org/bytedeco/llvm/10.0.0-1.5.4-SNAPSHOT/
@@ -35,6 +35,6 @@ dependencies {
 }
 
 wrapper {
-    gradleVersion = "6.5.1";
+    gradleVersion = "6.9.2";
 	distributionUrl = distributionUrl.replace("bin", "all");
 }

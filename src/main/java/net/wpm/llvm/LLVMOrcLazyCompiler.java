@@ -10,6 +10,7 @@ import static org.bytedeco.llvm.global.LLVM.LLVMVerifyModule;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.llvm.LLVM.LLVMErrorRef;
+import org.bytedeco.llvm.LLVM.LLVMJITEventListenerRef;
 import org.bytedeco.llvm.LLVM.LLVMModuleRef;
 import org.bytedeco.llvm.LLVM.LLVMOrcJITStackRef;
 import org.bytedeco.llvm.LLVM.LLVMOrcSymbolResolverFn;
@@ -77,6 +78,15 @@ public class LLVMOrcLazyCompiler {
 		LLVMOrcJITStackRef orc_ref = LLVM.LLVMOrcCreateInstance(tm_ref);
 
 
+		LLVMJITEventListenerRef listener1 = LLVM.LLVMCreateGDBRegistrationListener();
+		LLVMJITEventListenerRef listener2 = LLVM.LLVMCreateIntelJITEventListener();
+		LLVMJITEventListenerRef listener3 = LLVM.LLVMCreateOProfileJITEventListener();
+		LLVMJITEventListenerRef listener4 = LLVM.LLVMCreatePerfJITEventListener();
+		LLVM.LLVMOrcRegisterJITEventListener(orc_ref, listener1);
+		LLVM.LLVMOrcRegisterJITEventListener(orc_ref, listener2);
+		LLVM.LLVMOrcRegisterJITEventListener(orc_ref, listener3);
+		LLVM.LLVMOrcRegisterJITEventListener(orc_ref, listener4);
+		
 		// Mangle the given symbol.
 		// Memory is allocated for the mangled symbol, which will be owned by the client.
 		BytePointer testFuncName = new BytePointer();

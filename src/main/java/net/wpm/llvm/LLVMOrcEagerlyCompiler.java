@@ -97,7 +97,6 @@ public class LLVMOrcEagerlyCompiler {
 		// TODO: the eagerly compiler currently does not work
 		long[] retHandle = new long[1];
 		LLVMErrorRef errorCode = LLVM.LLVMOrcAddEagerlyCompiledIR(orc_ref, retHandle, module, symbol_resolver_callback, orc_ref);
-		Thread.sleep(10000);
 		checkOrcError(orc_ref, errorCode);
 		System.out.println("retHandle value: " + retHandle[0]);
 
